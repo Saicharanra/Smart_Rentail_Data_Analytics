@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 212 53% 11%;
+    --foreground: 0 0% 100%;
+
+    --card: 213 46% 14%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 213 46% 14%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 173 70% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 213 36% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 213 36% 18%;
+    --muted-foreground: 215 20% 75%;
+
+    --accent: 173 70% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 213 36% 22%;
+    --input: 213 36% 22%;
+    --ring: 173 70% 35%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-navy-gradient text-white antialiased selection:bg-teal-500 selection:text-white font-sans;
+  }
+}
+
+/* Background Gradient: Deep Navy (#0D1B2A) to Teal (#1B998B) */
+.bg-navy-gradient {
+  background: linear-gradient(145deg, #0D1B2A 0%, #0D2235 30%, #0F3B44 65%, #1B998B 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Typography Hierarchy Utilities */
+.ui-h1 {
+  font-family: var(--font-heading), 'Poppins', 'Montserrat', sans-serif;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.ui-h2 {
+  font-family: var(--font-heading), 'Poppins', 'Montserrat', sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.ui-h3 {
+  font-family: var(--font-heading), 'Poppins', 'Montserrat', sans-serif;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.ui-body {
+  font-family: var(--font-sans), 'Open Sans', 'Roboto', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #e2e8f0;
+}
+
+.ui-btn {
+  font-family: var(--font-heading), 'Poppins', 'Montserrat', sans-serif;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+.ui-caption {
+  font-family: var(--font-sans), 'Open Sans', 'Roboto', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #cbd5e1;
+}
+
+/* Glassmorphic Navy & Teal Surfaces */
+.glass-panel {
+  background: rgba(13, 27, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(27, 153, 139, 0.25);
+}
+
+.glass-card {
+  background: rgba(20, 40, 62, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  background: rgba(27, 60, 85, 0.85);
+  border-color: rgba(45, 212, 191, 0.4);
+  box-shadow: 0 12px 32px -8px rgba(27, 153, 139, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0D1B2A;
+}
+::-webkit-scrollbar-thumb {
+  background: #1B998B;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2DD4BF;
+}
+
+/* Grid overlay background */
+.bg-grid-pattern {
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
