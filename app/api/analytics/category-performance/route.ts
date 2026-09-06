@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
       { name: 'Wearables & Fitness', sales: 270000, percentage: 21 },
       { name: 'Home Automation', sales: 178000, percentage: 14 },
     ];
+    
 
     return apiSuccess(categorySales, 'Category performance analytics retrieved');
   } catch (err: any) {
