@@ -44,33 +44,33 @@ export default function CoverEcommercePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy-800/90 border border-teal-500/30 text-teal-300 ui-caption text-[14px] font-normal shadow-lg backdrop-blur-md"
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-navy-800/90 border border-teal-500/30 text-teal-300 text-sm font-medium shadow-lg backdrop-blur-md"
               >
                 <Sparkles className="w-4 h-4 text-teal-400" />
                 <span>Next-Gen Smart Devices & Tech Hardware</span>
               </motion.div>
 
-              {/* Headline H1 (32px, bold, Poppins) */}
+              {/* Headline H1 */}
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="ui-h1 text-[32px] sm:text-[42px] lg:text-[48px] font-bold text-white tracking-tight leading-[1.15]"
+                className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.12]"
               >
-                Discover Next-Gen Smart Retail & Connected Tech
+                Discover Next-Gen <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-teal-400 to-emerald-300">Smart Retail</span> & Connected Tech
               </motion.h1>
 
-              {/* Sub-headline / Body (16px, regular, Open Sans) */}
+              {/* Sub-headline / Body */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="ui-body text-[16px] text-slate-200 leading-[26px] max-w-2xl"
+                className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-2xl font-normal"
               >
                 Upgrade your lifestyle with studio-grade audio hardware, ergonomic office setups, precision smartwatch wearables, and smart home automation.
               </motion.p>
 
-              {/* CTA Buttons (18px, semi-bold) */}
+              {/* CTA Buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -79,45 +79,66 @@ export default function CoverEcommercePage() {
               >
                 <Link
                   href="/shop"
-                  className="px-8 py-4 rounded-2xl bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-[18px] font-semibold shadow-xl shadow-teal-500/25 flex items-center gap-2.5 transition-all transform hover:-translate-y-0.5"
+                  className="px-8 py-4 rounded-2xl bg-teal-500 hover:bg-teal-400 text-navy-950 text-base sm:text-lg font-bold shadow-xl shadow-teal-500/25 flex items-center gap-2.5 transition-all transform hover:-translate-y-0.5"
                 >
                   <ShoppingBag className="w-5 h-5 text-navy-950" />
                   Shop Full Catalog
                 </Link>
                 <Link
                   href="/categories"
-                  className="px-8 py-4 rounded-2xl bg-navy-800/90 hover:bg-navy-700 text-white ui-btn text-[18px] font-semibold border border-teal-500/30 flex items-center gap-2.5 transition-all backdrop-blur-md"
+                  className="px-8 py-4 rounded-2xl bg-navy-800/90 hover:bg-navy-700 text-white text-base sm:text-lg font-semibold border border-teal-500/30 flex items-center gap-2.5 transition-all backdrop-blur-md"
                 >
                   Explore Categories
                 </Link>
               </motion.div>
 
-              {/* Trust Indicators (14px Caption) */}
+              {/* Live Statistics Counter Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.35 }}
+                className="grid grid-cols-3 gap-4 p-4 rounded-2xl bg-navy-900/60 border border-teal-500/20 backdrop-blur-md my-4"
+              >
+                <div className="text-center sm:text-left">
+                  <div className="text-xl sm:text-2xl font-extrabold text-white font-mono">15,000+</div>
+                  <div className="text-xs text-slate-300 font-medium">Happy Customers</div>
+                </div>
+                <div className="text-center sm:text-left border-l border-teal-500/20 pl-4">
+                  <div className="text-xl sm:text-2xl font-extrabold text-teal-300 font-mono">4.9 ★</div>
+                  <div className="text-xs text-slate-300 font-medium">Average Rating</div>
+                </div>
+                <div className="text-center sm:text-left border-l border-teal-500/20 pl-4">
+                  <div className="text-xl sm:text-2xl font-extrabold text-white font-mono">99.8%</div>
+                  <div className="text-xs text-slate-300 font-medium">On-Time Shipping</div>
+                </div>
+              </motion.div>
+
+              {/* Trust Indicators */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="grid grid-cols-3 gap-6 pt-6 border-t border-teal-500/20 ui-caption"
+                className="grid grid-cols-3 gap-6 pt-4 border-t border-teal-500/20 text-sm"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Truck className="w-5 h-5 text-teal-400 shrink-0" />
                   <div>
-                    <span className="text-white font-semibold block text-[14px]">Free Express Delivery</span>
-                    <span className="text-slate-300 text-[13px]">Orders over ₹5,000</span>
+                    <span className="text-white font-semibold block text-sm">Free Express Shipping</span>
+                    <span className="text-slate-300 text-xs">Orders over ₹5,000</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <ShieldCheck className="w-5 h-5 text-teal-400 shrink-0" />
                   <div>
-                    <span className="text-white font-semibold block text-[14px]">2-Year Warranty</span>
-                    <span className="text-slate-300 text-[13px]">Full protection</span>
+                    <span className="text-white font-semibold block text-sm">2-Year Warranty</span>
+                    <span className="text-slate-300 text-xs">Full protection</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <RotateCcw className="w-5 h-5 text-teal-400 shrink-0" />
                   <div>
-                    <span className="text-white font-semibold block text-[14px]">30 Days Return</span>
-                    <span className="text-slate-300 text-[13px]">Money-back policy</span>
+                    <span className="text-white font-semibold block text-sm">30 Days Return</span>
+                    <span className="text-slate-300 text-xs">Money-back policy</span>
                   </div>
                 </div>
               </motion.div>

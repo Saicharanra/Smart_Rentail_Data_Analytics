@@ -185,26 +185,29 @@ export function Navbar() {
 
           {/* Dynamic Authentication Header Controls */}
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {user.role === 'ADMIN' && (
                 <Link
                   href="/admin"
-                  className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 border border-teal-500/30 text-teal-300 ui-caption text-[13px] font-semibold transition-all"
+                  className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 border border-teal-500/30 text-teal-300 ui-caption text-[13px] font-semibold transition-all shadow-sm"
                 >
                   <LayoutDashboard className="w-4 h-4" /> Admin
                 </Link>
               )}
+              {/* Profile Photo Only Badge */}
               <Link
                 href="/profile"
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-300 hover:bg-teal-500/30 ui-caption font-semibold transition-all"
-                title="View My Account Profile"
+                className="relative group p-0.5 rounded-full bg-gradient-to-tr from-teal-400 via-teal-300 to-emerald-400 shadow-md shadow-teal-500/20 hover:scale-105 transition-all duration-200"
+                title={`Account Profile (${user.name || user.email})`}
               >
-                <User className="w-4 h-4 text-teal-400" />
-                <span className="hidden sm:inline max-w-[120px] truncate">{user.name || user.email.split('@')[0]}</span>
+                <div className="w-9 h-9 rounded-full bg-navy-950 flex items-center justify-center text-teal-300 font-bold text-sm font-heading border border-navy-900 overflow-hidden">
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-teal-400 border-2 border-navy-900 rounded-full" />
               </Link>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-xl bg-navy-800 hover:bg-red-500/20 border border-teal-500/30 text-slate-300 hover:text-red-300 transition-all hidden sm:flex"
+                className="p-2.5 rounded-xl bg-navy-800 hover:bg-red-500/20 border border-teal-500/30 text-slate-300 hover:text-red-300 transition-all hidden sm:flex"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />

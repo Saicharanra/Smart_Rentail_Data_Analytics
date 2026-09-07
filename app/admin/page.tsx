@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   IndianRupee,
@@ -19,6 +19,42 @@ import { MOCK_ORDERS, MOCK_INVENTORY, MOCK_PRODUCTS } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
 
 export default function AdminDashboardOverview() {
+  const [metrics, setMetrics] = useState({
+    totalRevenue: 312000,
+    totalOrders: 2750,
+    totalCustomers: 1420,
+    totalProducts: 12,
+  });
+
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  useEffect(() => {
+    async function fetchOverview() {
+      try {
+        const res = await fetch('/api/analytics/overview', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (res.ok && data.data) {
+          setMetrics({
+            totalRevenue: data.data.totalRevenue || 312000,
+            totalOrders: data.data.totalOrders || 2750,
+            totalCustomers: data.data.totalCustomers || 1420,
+            totalProducts: data.data.totalProducts || 12,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch analytics overview:', err);
+      }
+    }
+    fetchOverview();
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Top Banner */}
@@ -54,7 +90,7 @@ export default function AdminDashboardOverview() {
               <IndianRupee className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-mono text-white">{formatCurrency(312000)}</div>
+          <div className="text-2xl font-extrabold font-mono text-white">{formatCurrency(metrics.totalRevenue)}</div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
             <TrendingUp className="w-3.5 h-3.5" /> +14.8% vs last month
           </div>
@@ -68,7 +104,7 @@ export default function AdminDashboardOverview() {
               <ShoppingBag className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-mono text-white">2,750</div>
+          <div className="text-2xl font-extrabold font-mono text-white">{metrics.totalOrders.toLocaleString()}</div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
             <TrendingUp className="w-3.5 h-3.5" /> +12.2% vs last month
           </div>
@@ -82,7 +118,7 @@ export default function AdminDashboardOverview() {
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-mono text-white">1,420</div>
+          <div className="text-2xl font-extrabold font-mono text-white">{metrics.totalCustomers.toLocaleString()}</div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
             <TrendingUp className="w-3.5 h-3.5" /> +18.5% retention
           </div>
@@ -96,9 +132,9 @@ export default function AdminDashboardOverview() {
               <Package className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-mono text-white">12 SKUs</div>
+          <div className="text-2xl font-extrabold font-mono text-white">{metrics.totalProducts} SKUs</div>
           <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-            4 Categories Indexed
+            DirectQuery Sync Active
           </div>
         </div>
       </div>

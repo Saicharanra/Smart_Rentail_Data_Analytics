@@ -75,13 +75,13 @@ export function CartDrawer() {
                     <div className="w-16 h-16 rounded-full bg-navy-800 border border-teal-500/30 flex items-center justify-center text-teal-300">
                       <ShoppingBag className="w-8 h-8" />
                     </div>
-                    <h4 className="ui-h3 text-[20px] font-medium text-white">Your cart is empty</h4>
-                    <p className="ui-body text-[16px] text-slate-300 max-w-xs">
+                    <h4 className="ui-h3 text-[20px] font-heading font-semibold text-white">Your cart is empty</h4>
+                    <p className="ui-body text-[15px] font-sans text-slate-300 max-w-xs leading-relaxed">
                       Explore our premium smart retail products catalog to add items.
                     </p>
                     <button
                       onClick={() => setIsCartOpen(false)}
-                      className="mt-2 px-6 py-3 bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-[18px] font-semibold rounded-xl"
+                      className="mt-2 px-6 py-3 bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-[16px] font-bold rounded-xl shadow-lg shadow-teal-500/20 transition-all"
                     >
                       Browse Catalog
                     </button>
@@ -90,50 +90,60 @@ export function CartDrawer() {
                   cart.map(({ product, quantity }) => (
                     <div
                       key={product.id}
-                      className="flex items-center gap-4 bg-navy-950/70 p-3.5 rounded-2xl border border-teal-500/20"
+                      className="flex items-center gap-4 bg-navy-950/80 p-4 rounded-2xl border border-teal-500/25 shadow-md hover:border-teal-500/40 transition-all group"
                     >
-                      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-navy-900 shrink-0 border border-teal-500/20">
+                      <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-navy-900 shrink-0 border border-teal-500/25 shadow-inner">
                         <Image
                           src={product.image}
                           alt={product.name}
                           fill
-                          className="object-cover"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="ui-body text-[16px] font-medium text-white truncate">
+
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold text-teal-300 uppercase tracking-wider bg-teal-500/15 px-2 py-0.5 rounded border border-teal-500/30">
+                            {product.category}
+                          </span>
+                        </div>
+                        <h4 className="font-heading text-base font-semibold text-white tracking-tight leading-snug truncate group-hover:text-teal-300 transition-colors">
                           {product.name}
                         </h4>
-                        <span className="ui-caption text-[14px] text-teal-300 block font-mono">
-                          {formatCurrency(product.price)}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
+                          <span>{formatCurrency(product.price)} each</span>
+                        </div>
+
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center border border-teal-500/30 bg-navy-900 rounded-lg">
+                          <div className="flex items-center border border-teal-500/30 bg-navy-900 rounded-lg p-0.5">
                             <button
                               onClick={() => updateQuantity(product.id, quantity - 1)}
-                              className="p-1 hover:bg-navy-800 text-slate-300 hover:text-white"
+                              className="p-1 hover:bg-navy-800 text-slate-300 hover:text-white rounded transition-colors"
+                              aria-label="Decrease quantity"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
-                            <span className="px-2.5 ui-caption text-[14px] font-mono font-bold text-white">
+                            <span className="px-2.5 font-mono text-xs font-bold text-white">
                               {quantity}
                             </span>
                             <button
                               onClick={() => updateQuantity(product.id, quantity + 1)}
-                              className="p-1 hover:bg-navy-800 text-slate-300 hover:text-white"
+                              className="p-1 hover:bg-navy-800 text-slate-300 hover:text-white rounded transition-colors"
+                              aria-label="Increase quantity"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="ui-body text-[16px] font-bold font-mono text-white block">
+
+                      <div className="text-right flex flex-col justify-between items-end h-full">
+                        <span className="font-heading font-mono text-base font-bold text-teal-300 block">
                           {formatCurrency(product.price * quantity)}
                         </span>
                         <button
                           onClick={() => removeFromCart(product.id)}
-                          className="mt-2 p-1 text-slate-400 hover:text-red-400 transition-colors"
+                          className="mt-3 p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Remove item"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -147,24 +157,24 @@ export function CartDrawer() {
               {/* Summary & Checkout Actions */}
               {cart.length > 0 && (
                 <div className="p-6 border-t border-teal-500/20 bg-navy-950/90 space-y-4">
-                  <div className="space-y-2 ui-caption text-[14px]">
+                  <div className="space-y-2.5 text-sm font-sans">
                     <div className="flex justify-between text-slate-300">
                       <span>Subtotal</span>
-                      <span className="font-mono text-white">{formatCurrency(subtotal)}</span>
+                      <span className="font-mono font-semibold text-slate-100">{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-slate-300">
                       <span>Estimated Tax (8%)</span>
-                      <span className="font-mono text-white">{formatCurrency(tax)}</span>
+                      <span className="font-mono font-semibold text-slate-100">{formatCurrency(tax)}</span>
                     </div>
                     <div className="flex justify-between text-slate-300">
                       <span>Express Shipping</span>
-                      <span className="font-mono text-teal-300 font-semibold">
+                      <span className="font-mono font-bold text-teal-300">
                         {shipping === 0 ? 'FREE' : formatCurrency(shipping)}
                       </span>
                     </div>
-                    <div className="flex justify-between ui-body text-[16px] font-bold text-white pt-2 border-t border-teal-500/20">
+                    <div className="flex justify-between font-heading text-base font-bold text-white pt-3 border-t border-teal-500/20">
                       <span>Total Amount</span>
-                      <span className="font-mono text-teal-300">{formatCurrency(totalPrice)}</span>
+                      <span className="font-mono text-teal-300 text-lg">{formatCurrency(totalPrice)}</span>
                     </div>
                   </div>
 
@@ -172,14 +182,14 @@ export function CartDrawer() {
                     <Link
                       href="/cart"
                       onClick={() => setIsCartOpen(false)}
-                      className="w-full py-3 rounded-xl border border-teal-500/30 bg-navy-800 hover:bg-navy-700 ui-caption text-[14px] font-semibold text-white text-center transition-colors flex items-center justify-center gap-1"
+                      className="w-full py-3 rounded-xl border border-teal-500/30 bg-navy-800 hover:bg-navy-700 font-sans text-sm font-semibold text-white text-center transition-colors flex items-center justify-center gap-1"
                     >
-                      View Cart
+                      View Full Cart
                     </Link>
                     <Link
                       href="/checkout"
                       onClick={() => setIsCartOpen(false)}
-                      className="w-full py-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-[18px] font-semibold text-center shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-1"
+                      className="w-full py-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-base font-bold text-center shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-1"
                     >
                       Checkout <ArrowRight className="w-4 h-4 text-navy-950" />
                     </Link>

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Lock, ArrowRight, X } from 'lucide-react';
 import { Product } from './mock-data';
 
 export interface CartItem {
@@ -28,30 +30,23 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Initial load default item so cart is non-empty for demonstration
+  // Initialize cart empty by default
   useEffect(() => {
-    const defaultProduct: Product = {
-      id: 'prod-101',
-      name: 'Apex ANC Wireless Headphones',
-      sku: 'SKU-APX-900',
-      category: 'Smart Electronics',
-      price: 299,
-      rating: 4.8,
-      reviewCount: 142,
-      stock: 48,
-      reorderPoint: 15,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-      description: 'Flagship studio-grade noise-cancelling headphones.',
-      features: ['Active Noise Cancellation'],
-      specs: { 'Driver Unit': '40mm Titanium' },
-      supplier: 'Apex Audio Tech Ltd',
-    };
-    setCart([{ product: defaultProduct, quantity: 1 }]);
+    setCart([]);
   }, []);
 
   const addToCart = (product: Product, quantity: number = 1) => {
+    // Check if user is logged in
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const userInfo = typeof window !== 'undefined' ? localStorage.getItem('user_info') : null;
+
+    if (!token && !userInfo) {
+      setShowLoginModal(true);
+      return;
+    }
+
     setCart((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
@@ -109,6 +104,52 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+
+      {/* Login Required Modal Overlay */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-md">
+          <div className="bg-navy-900 border border-teal-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-navy-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-16 h-16 rounded-2xl bg-teal-500/20 text-teal-300 mx-auto flex items-center justify-center border border-teal-500/30 shadow-lg shadow-teal-500/10">
+              <Lock className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="ui-h2 text-[24px] font-bold text-white tracking-tight">Sign In Required</h3>
+              <p className="ui-caption text-[14px] text-slate-300 leading-relaxed">
+                Please sign in to your account to add items to your cart and complete your order.
+              </p>
+            </div>
+            <div className="space-y-3 pt-2">
+              <Link
+                href="/login"
+                onClick={() => setShowLoginModal(false)}
+                className="w-full py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-navy-950 ui-btn text-[16px] font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 transition-all"
+              >
+                Sign In to Account <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setShowLoginModal(false)}
+                className="w-full py-3 rounded-xl bg-navy-800 hover:bg-navy-700 text-white ui-caption text-[14px] font-semibold flex items-center justify-center gap-2 transition-colors border border-teal-500/20"
+              >
+                Create Account
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(false)}
+                className="ui-caption text-[13px] text-slate-400 hover:text-white transition-colors block mx-auto pt-1"
+              >
+                Continue Browsing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CartContext.Provider>
   );
 }

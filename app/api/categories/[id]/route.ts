@@ -4,6 +4,51 @@ import { requireAdmin } from '@/lib/permissions/auth-guard';
 import { updateCategorySchema } from '@/lib/validations/category';
 import { apiSuccess, apiError } from '@/lib/utils/api-response';
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const category = await prisma.category.findFirst({
+      where: { OR: [{ id }, { slug: id }, { name: id }] },
+      include: {
+        products: {
+          where: { isActive: true },
+          include: {
+            inventoryItems: true,
+            _count: { select: { reviews: true } },
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      return apiError('Category not found', 404);
+    }
+
+    const formattedProducts = category.products.map((p) => {
+      const totalStock = p.inventoryItems.reduce((sum, inv) => sum + inv.quantity, 0);
+      return {
+        ...p,
+        price: Number(p.price),
+        costPrice: p.costPrice ? Number(p.costPrice) : null,
+        totalStock,
+        reviewCount: p._count.reviews,
+      };
+    });
+
+    return apiSuccess({
+      ...category,
+      itemCount: category.products.length,
+      products: formattedProducts,
+    }, 'Category fetched successfully');
+  } catch (err: any) {
+    return apiError(err.message || 'Internal server error', 500);
+  }
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

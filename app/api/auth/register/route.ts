@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(validated.password);
-    const role = validated.role || 'CUSTOMER';
+    // Newly registered users strictly default to CUSTOMER role (public selection of ADMIN is prohibited)
+    const role = 'CUSTOMER';
 
     // Construct Prisma create payload safely
     const userData: any = {

@@ -39,7 +39,7 @@ export function ProductCard({ product }: { product: Product }) {
           )}
           {product.isTrending && (
             <span className="ui-caption text-[12px] font-semibold uppercase px-3 py-1 rounded-full bg-navy-900/90 text-teal-300 border border-teal-500/40 backdrop-blur-md shadow-md">
-              Trending BI
+              Trending
             </span>
           )}
         </div>

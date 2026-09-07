@@ -50,19 +50,6 @@ export default function LoginPage() {
     window.dispatchEvent(new Event('auth_change'));
   };
 
-  // 1-Click Demo Login Fillers
-  const fillAdminCredentials = () => {
-    setEmail('admin@retail.bi');
-    setPassword('Password123!');
-    setErrorMsg('');
-  };
-
-  const fillCustomerCredentials = () => {
-    setEmail('customer1@example.com');
-    setPassword('Password123!');
-    setErrorMsg('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -177,32 +164,6 @@ export default function LoginPage() {
               <p className="ui-caption text-[14px] text-slate-300">
                 Sign in to your Smart Retail account to continue shopping or managing operations.
               </p>
-            </div>
-
-            {/* Quick 1-Click Demo Login Buttons */}
-            <div className="bg-navy-950/80 border border-teal-500/20 rounded-2xl p-4 space-y-2.5">
-              <div className="flex items-center justify-between text-xs text-teal-300 font-mono font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Quick Demo Fillers
-                </span>
-                <span className="text-[11px] text-slate-400 font-normal">Click to autofill</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={fillAdminCredentials}
-                  className="py-2 px-3 rounded-xl bg-navy-800 hover:bg-teal-500/20 border border-teal-500/30 text-white ui-caption text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-teal-400" /> Admin Demo
-                </button>
-                <button
-                  type="button"
-                  onClick={fillCustomerCredentials}
-                  className="py-2 px-3 rounded-xl bg-navy-800 hover:bg-teal-500/20 border border-teal-500/30 text-white ui-caption text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-teal-400" /> Customer Demo
-                </button>
-              </div>
             </div>
 
             {/* Alert Messages */}
