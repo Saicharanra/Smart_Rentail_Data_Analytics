@@ -13,12 +13,12 @@ export async function GET(req: NextRequest) {
     let whereClause: any = {};
     if (session?.role === 'CUSTOMER') {
       if (!session.customerId) {
-        return apiError('Customer profile required', 400);
+        return apiError('Customer profile required to view orders', 400);
       }
       whereClause.customerId = session.customerId;
     }
 
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'All') {
       whereClause.status = statusFilter;
     }
 
@@ -50,10 +50,13 @@ export async function GET(req: NextRequest) {
       shippingAddress: o.shippingAddress,
       trackingNumber: o.trackingNumber,
       paymentMethod: o.payments[0]?.method || 'CREDIT_CARD',
+      paymentStatus: o.payments[0]?.status || 'COMPLETED',
       items: o.items.map((item) => ({
+        id: item.id,
         productId: item.productId,
         productName: item.product.name,
         productImage: item.product.imageUrl || '',
+        productSku: item.product.sku,
         price: Number(item.unitPrice),
         quantity: item.quantity,
         total: Number(item.totalPrice),
@@ -72,7 +75,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = createOrderSchema.parse(body);
 
-    // 1. Resolve customer ID
+    // 1. Resolve Customer ID from session or explicitly passed customerId (if admin/system)
     const customerId = validated.customerId || session.customerId;
     if (!customerId) {
       return apiError('Customer profile required to place order', 400);
@@ -85,17 +88,23 @@ export async function POST(req: NextRequest) {
       return apiError('Customer record not found', 404);
     }
 
-    // 2. Validate products and stock
+    // 2. Fetch authoritative product information from database (SERVER-SIDE PRICE SECURITY)
     const productIds = validated.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, isActive: true },
-      include: { inventoryItems: true },
+      where: { id: { in: productIds } },
     });
 
     if (products.length !== productIds.length) {
-      return apiError('One or more selected products are invalid or inactive', 400);
+      return apiError('One or more selected products no longer exist.', 400);
     }
 
+    // Check for inactive products (Stale Cart Validation)
+    const inactiveProduct = products.find((p) => !p.isActive);
+    if (inactiveProduct) {
+      return apiError(`Product "${inactiveProduct.name}" is no longer active for purchase.`, 400);
+    }
+
+    // Compute server-authoritative line items and totals
     let subtotal = 0;
     const orderItemsData: Array<{
       productId: string;
@@ -110,14 +119,6 @@ export async function POST(req: NextRequest) {
       const itemTotal = unitPrice * item.quantity;
       subtotal += itemTotal;
 
-      const totalStock = product.inventoryItems.reduce((sum, inv) => sum + inv.quantity, 0);
-      if (totalStock < item.quantity) {
-        return apiError(
-          `Insufficient stock for "${product.name}". Available: ${totalStock}, Requested: ${item.quantity}`,
-          400
-        );
-      }
-
       orderItemsData.push({
         productId: product.id,
         unitPrice,
@@ -126,27 +127,69 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const tax = subtotal * 0.08;
-    const shippingFee = subtotal > 200 ? 0 : 15;
+    const tax = Math.round(subtotal * 0.08 * 100) / 100;
+    const shippingFee = subtotal >= 200 ? 0 : 15;
     const totalAmount = subtotal + tax + shippingFee;
 
-    const orderNumber = `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderNumber = `ORD-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const trackingNumber = `TRK-AZU-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
-    // 3. Perform atomic Prisma $transaction
+    // 3. ATOMIC PRISMA $TRANSACTION WITH OVERSELLING & CONCURRENCY PROTECTION
     const result = await prisma.$transaction(async (tx) => {
-      // Create Order
+      // Re-verify stock inside transaction for concurrency safety
+      for (const item of validated.items) {
+        const product = products.find((p) => p.id === item.productId)!;
+
+        // Fetch all inventory items for this product
+        const inventoryRecords = await tx.inventory.findMany({
+          where: { productId: item.productId },
+        });
+
+        const totalStock = inventoryRecords.reduce((sum, inv) => sum + inv.quantity, 0);
+
+        if (totalStock < item.quantity) {
+          throw new Error(
+            `Insufficient inventory for "${product.name}". Available: ${totalStock}, Requested: ${item.quantity}`
+          );
+        }
+
+        // Deduct quantity from primary inventory record (or first available with quantity)
+        let remainingToDeduct = item.quantity;
+        for (const inv of inventoryRecords) {
+          if (remainingToDeduct <= 0) break;
+          const deductAmount = Math.min(inv.quantity, remainingToDeduct);
+          if (deductAmount > 0) {
+            const updated = await tx.inventory.update({
+              where: { id: inv.id },
+              data: {
+                quantity: { decrement: deductAmount },
+              },
+            });
+            if (updated.quantity < 0) {
+              throw new Error(`Negative stock prevented for "${product.name}".`);
+            }
+            remainingToDeduct -= deductAmount;
+          }
+        }
+
+        if (remainingToDeduct > 0) {
+          throw new Error(`Stock deduction failed for "${product.name}".`);
+        }
+      }
+
+      // Create Order, OrderItems, and Payment record atomically
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           customerId,
-          storeId: validated.storeId,
+          storeId: validated.storeId || null,
           status: 'PROCESSING',
           subtotal,
           tax,
           shippingFee,
           totalAmount,
           shippingAddress: validated.shippingAddress,
-          trackingNumber: `TRK-AZU-${Math.floor(1000000 + Math.random() * 9000000)}`,
+          trackingNumber,
           items: {
             create: orderItemsData,
           },
@@ -155,7 +198,7 @@ export async function POST(req: NextRequest) {
               amount: totalAmount,
               method: validated.paymentMethod,
               status: 'COMPLETED',
-              transactionId: `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              transactionId: `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
             },
           },
         },
@@ -165,32 +208,21 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Deduct inventory
-      for (const item of validated.items) {
-        const inv = await tx.inventory.findFirst({
-          where: { productId: item.productId },
-        });
-
-        if (inv) {
-          await tx.inventory.update({
-            where: { id: inv.id },
-            data: {
-              quantity: { decrement: item.quantity },
-            },
-          });
-        }
-      }
-
       return newOrder;
     });
 
     return apiSuccess(
       {
-        ...result,
+        id: result.id,
+        orderNumber: result.orderNumber,
+        status: result.status,
         subtotal: Number(result.subtotal),
         tax: Number(result.tax),
         shippingFee: Number(result.shippingFee),
         totalAmount: Number(result.totalAmount),
+        shippingAddress: result.shippingAddress,
+        trackingNumber: result.trackingNumber,
+        createdAt: result.createdAt.toISOString(),
       },
       'Order placed successfully and inventory updated',
       201
@@ -201,6 +233,10 @@ export async function POST(req: NextRequest) {
     }
     if (err.name === 'ZodError') {
       return apiError('Validation error', 400, err.errors);
+    }
+    // Return explicit stock / transaction validation error message
+    if (err.message && (err.message.includes('Insufficient inventory') || err.message.includes('Negative stock'))) {
+      return apiError(err.message, 400);
     }
     return apiError(err.message || 'Internal server error', 500);
   }

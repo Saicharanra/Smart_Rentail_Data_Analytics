@@ -9,7 +9,11 @@
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "seed": "tsx prisma/seed.ts",
+    "seed:small": "tsx prisma/seed.ts --size small",
+    "seed:medium": "tsx prisma/seed.ts --size medium",
+    "seed:large": "tsx prisma/seed.ts --size large"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

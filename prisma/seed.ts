@@ -1,12 +1,33 @@
-import { PrismaClient, Role, OrderStatus, PaymentStatus } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+import { getSeedConfig } from './seed/config';
+import { SeededRandom } from './seed/utils/random';
+import { generateCategories } from './seed/generators/categories';
+import { generateSuppliers } from './seed/generators/suppliers';
+import { generateStores } from './seed/generators/stores';
+import { generateUsersAndCustomers } from './seed/generators/users';
+import { generateProducts } from './seed/generators/products';
+import { generateInventory } from './seed/generators/inventory';
+import { generateOrders } from './seed/generators/orders';
+import { generateReviews } from './seed/generators/reviews';
+import { validateSeededDatabase } from './seed/validate';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Database Seeding...');
+  const startTime = Date.now();
+  const config = getSeedConfig();
+  const random = new SeededRandom(config.randomSeed);
 
-  // 1. Clean existing records
+  console.log('====================================================');
+  console.log(`🚀 STARTING RETAIL DATA GENERATION [Preset: ${config.size.toUpperCase()}]`);
+  console.log('====================================================');
+  console.log(`• Random Seed: ${config.randomSeed}`);
+  console.log(`• Date Range:  ${config.startDate.toISOString().substring(0, 10)} → ${config.endDate.toISOString().substring(0, 10)}`);
+  console.log(`• Targets:     ${config.counts.customers} Customers | ${config.counts.products} Products | ${config.counts.orders} Orders`);
+  console.log('====================================================\n');
+
+  // 1. Clean existing records in reverse dependency order
+  console.log('🧹 Cleaning existing database tables...');
   await prisma.review.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.orderItem.deleteMany();
@@ -18,271 +39,95 @@ async function main() {
   await prisma.store.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
+  console.log('✓ Database cleaned successfully.\n');
 
-  console.log('🧹 Cleaned existing database tables.');
+  // 2. Generate Categories
+  console.log(`📁 Generating ${config.counts.categories} Categories...`);
+  const categories = await generateCategories(prisma, config.counts.categories, random);
+  console.log(`✓ Created ${categories.length} categories.`);
 
-  // 2. Hash default password
-  const passwordHash = await bcrypt.hash('Password123!', 10);
+  // 3. Generate Suppliers
+  console.log(`🏭 Generating ${config.counts.suppliers} Suppliers...`);
+  const categoryNames = categories.map((c) => c.name);
+  const suppliers = await generateSuppliers(prisma, config.counts.suppliers, categoryNames, random);
+  console.log(`✓ Created ${suppliers.length} suppliers.`);
 
-  // 3. Create Admin User
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@retail.bi',
-      name: 'System Admin',
-      passwordHash,
-      role: Role.ADMIN,
-    },
-  });
+  // 4. Generate Stores
+  console.log(`🏪 Generating ${config.counts.stores} Stores...`);
+  const stores = await generateStores(prisma, config.counts.stores, random);
+  console.log(`✓ Created ${stores.length} stores.`);
 
-  // 4. Create 50+ Customer Users & Profiles
-  console.log('👤 Seeding 50+ Customers...');
-  const customerProfiles = [];
-  const cities = ['Seattle', 'Austin', 'San Francisco', 'Chicago', 'New York', 'Boston', 'Denver', 'Miami'];
-  const states = ['WA', 'TX', 'CA', 'IL', 'NY', 'MA', 'CO', 'FL'];
+  // 5. Generate Users & Customers
+  console.log(`👤 Generating Admin & ${config.counts.customers} Customers...`);
+  const { adminUser, customerProfiles } = await generateUsersAndCustomers(prisma, config.counts.customers, random);
+  console.log(`✓ Created 1 Admin & ${customerProfiles.length} customer profiles.`);
 
-  for (let i = 1; i <= 50; i++) {
-    const cityIndex = i % cities.length;
-    const user = await prisma.user.create({
-      data: {
-        email: `customer${i}@example.com`,
-        name: `Customer User ${i}`,
-        passwordHash,
-        role: Role.CUSTOMER,
-        customer: {
-          create: {
-            phone: `+1 (555) ${100 + i}-${2000 + i}`,
-            address: `${100 + i} Innovation Way`,
-            city: cities[cityIndex],
-            state: states[cityIndex],
-            postalCode: `${98000 + i}`,
-            country: 'USA',
-            segment: i <= 10 ? 'VIP' : i <= 35 ? 'Regular' : 'New',
-          },
-        },
-      },
-      include: { customer: true },
-    });
-    if (user.customer) {
-      customerProfiles.push(user.customer);
-    }
-  }
+  // 6. Generate Products
+  console.log(`📦 Generating ${config.counts.products} Products...`);
+  const products = await generateProducts(prisma, config.counts.products, categories, suppliers, random);
+  console.log(`✓ Created ${products.length} products.`);
 
-  // 5. Create 10+ Categories
-  console.log('📁 Seeding 10+ Categories...');
-  const categoriesData = [
-    { name: 'Smart Electronics', slug: 'smart-electronics', description: 'Next-gen audio, smart wearables, and IoT tech' },
-    { name: 'Workplace & Furniture', slug: 'workplace-furniture', description: 'Ergonomic smart office setups and minimalist workspaces' },
-    { name: 'Wearables & Fitness', slug: 'wearables-fitness', description: 'Biometric sensors, smartwatch bands, and health gear' },
-    { name: 'Home Automation', slug: 'home-automation', description: 'Connected living sensors, climate control, and smart security' },
-    { name: 'Audio & Acoustics', slug: 'audio-acoustics', description: 'Studio monitors, hi-fi headphones, and ANC earbuds' },
-    { name: 'Smart Lighting', slug: 'smart-lighting', description: 'RGBIC lightbars, light strips, and Thread mesh ambient lights' },
-    { name: 'Networking & Mesh', slug: 'networking-mesh', description: 'Wi-Fi 7 mesh routers and high-speed enterprise switches' },
-    { name: 'Mobile Accessories', slug: 'mobile-accessories', description: 'MagSafe wireless chargers, GaN power adapters, and cables' },
-    { name: 'Gaming Hardware', slug: 'gaming-hardware', description: 'Mechanical keyboards, lightweight mice, and high-refresh displays' },
-    { name: 'Storage & Backup', slug: 'storage-backup', description: 'PCIe 5.0 NVMe SSDs, external RAID arrays, and rugged drives' },
-  ];
+  // 7. Generate Inventory Matrix
+  console.log('🏬 Generating Inventory Stock Matrix...');
+  const inventoryCount = await generateInventory(prisma, products, stores, random);
+  console.log(`✓ Created ${inventoryCount} inventory stock items.`);
 
-  const categories = [];
-  for (const cat of categoriesData) {
-    const created = await prisma.category.create({ data: cat });
-    categories.push(created);
-  }
+  // 8. Generate Orders, OrderItems & Payments
+  console.log(`🛒 Generating ${config.counts.orders} Historical Orders & Payments...`);
+  const orderResult = await generateOrders(
+    prisma,
+    config.counts.orders,
+    customerProfiles,
+    products,
+    stores,
+    config.startDate,
+    config.endDate,
+    random
+  );
+  console.log(`✓ Created ${orderResult.ordersCount} orders, ${orderResult.orderItemsCount} items, and ${orderResult.paymentsCount} payments.`);
 
-  // 6. Create 10+ Suppliers
-  console.log('🏭 Seeding 10+ Suppliers...');
-  const suppliersData = [
-    { name: 'Apex Audio Tech Ltd', contactPerson: 'Robert Sterling', email: 'supply@apexaudio.io', phone: '+1 (555) 234-8901', category: 'Smart Electronics', leadTimeDays: 4, rating: 4.9 },
-    { name: 'Nordic Workspaces Inc', contactPerson: 'Freja Lindqvist', email: 'orders@nordicwork.se', phone: '+46 8 123 4567', category: 'Workplace & Furniture', leadTimeDays: 7, rating: 4.8 },
-    { name: 'BioMetrics Global', contactPerson: 'David Chen', email: 'logistics@biometrics.com', phone: '+1 (555) 789-0123', category: 'Wearables & Fitness', leadTimeDays: 5, rating: 4.6 },
-    { name: 'LuminaTech Systems', contactPerson: 'Sarah Jenkins', email: 'support@luminatech.io', phone: '+1 (555) 456-7890', category: 'Home Automation', leadTimeDays: 3, rating: 4.7 },
-    { name: 'Quantum Gear Corp', contactPerson: 'Michael Chang', email: 'b2b@quantumgear.com', phone: '+1 (555) 987-6543', category: 'Gaming Hardware', leadTimeDays: 6, rating: 4.9 },
-    { name: 'AeroGlide Solutions', contactPerson: 'Elena Rostova', email: 'contact@aeroglide.de', phone: '+49 30 9876543', category: 'Workplace & Furniture', leadTimeDays: 8, rating: 4.5 },
-    { name: 'CyberPulse Electronics', contactPerson: 'Alex Rivera', email: 'sales@cyberpulse.io', phone: '+1 (555) 321-6547', category: 'Networking & Mesh', leadTimeDays: 4, rating: 4.7 },
-    { name: 'Vortex Storage Ltd', contactPerson: 'Kenji Sato', email: 'orders@vortexstorage.jp', phone: '+81 3 1234 5678', category: 'Storage & Backup', leadTimeDays: 5, rating: 4.8 },
-    { name: 'Titan Power Systems', contactPerson: 'James O\'Connor', email: 'supply@titanpower.co.uk', phone: '+44 20 7946 0912', category: 'Mobile Accessories', leadTimeDays: 3, rating: 4.6 },
-    { name: 'Zenith Acoustic Labs', contactPerson: 'Claire Bennett', email: 'logistics@zenithaudio.fr', phone: '+33 1 42 68 55 00', category: 'Audio & Acoustics', leadTimeDays: 6, rating: 4.9 },
-  ];
+  // 9. Generate Product Reviews
+  console.log(`⭐ Generating ${config.counts.reviews} Verified Product Reviews...`);
+  const reviewCount = await generateReviews(prisma, config.counts.reviews, orderResult.createdOrders, random);
+  console.log(`✓ Created ${reviewCount} product reviews.`);
 
-  const suppliers = [];
-  for (const sup of suppliersData) {
-    const created = await prisma.supplier.create({ data: sup });
-    suppliers.push(created);
-  }
+  // 10. Post-generation Data Quality Validation
+  console.log('\n🔍 Running Post-Generation Data Quality Validation...');
+  const report = await validateSeededDatabase(prisma);
+  const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
-  // 7. Create Stores
-  console.log('🏪 Seeding Stores...');
-  const store1 = await prisma.store.create({
-    data: { name: 'Flagship Retail Hub', code: 'STR-SEA-01', address: '700 Fifth Avenue', city: 'Seattle', state: 'WA', zipCode: '98104', isOnline: false },
-  });
-  const store2 = await prisma.store.create({
-    data: { name: 'Downtown Tech Center', code: 'STR-ATX-02', address: '200 Congress Ave', city: 'Austin', state: 'TX', zipCode: '78701', isOnline: false },
-  });
-  const storeOnline = await prisma.store.create({
-    data: { name: 'Online Store Direct Hub', code: 'STR-ONLINE-00', address: '100 Cloud Way', city: 'Seattle', state: 'WA', zipCode: '98101', isOnline: true },
-  });
-  const stores = [store1, store2, storeOnline];
-
-  // 8. Create 100+ Products & Inventory Records
-  console.log('📦 Seeding 100+ Products & Inventory...');
-  const products = [];
-
-  for (let i = 1; i <= 100; i++) {
-    const category = categories[(i - 1) % categories.length];
-    const supplier = suppliers[(i - 1) % suppliers.length];
-    const basePrice = Math.floor(29 + (i * 7.5) % 600);
-    const costPrice = Math.floor(basePrice * 0.6);
-
-    const categoryImagePools: Record<string, string[]> = {
-      'smart-electronics': [
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80',
-      ],
-      'workplace-furniture': [
-        'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1505797149-43b0069ec26b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
-      ],
-      'wearables-fitness': [
-        'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1576678927484-cc909957088c?auto=format&fit=crop&w=800&q=80',
-      ],
-      'home-automation': [
-        'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1567690187548-f07b1d7bf5a9?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80',
-      ],
-    };
-
-    const globalFallback = [
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80',
-    ];
-
-    const pool = categoryImagePools[category.slug] || globalFallback;
-    const prodImg = pool[i % pool.length];
-
-    const product = await prisma.product.create({
-      data: {
-        sku: `SKU-RET-${1000 + i}`,
-        name: `Smart Product ${i} - ${category.name}`,
-        slug: `smart-product-${i}`,
-        description: `High performance enterprise retail product SKU-${1000 + i} built with precision components and IoT telemetry readiness.`,
-        price: basePrice,
-        costPrice: costPrice,
-        categoryId: category.id,
-        supplierId: supplier.id,
-        imageUrl: prodImg,
-        isActive: true,
-      },
-    });
-    products.push(product);
-
-    // Create Inventory per store
-    for (const store of stores) {
-      const qty = i % 5 === 0 ? Math.floor(Math.random() * 5) : Math.floor(15 + Math.random() * 80);
-      await prisma.inventory.create({
-        data: {
-          productId: product.id,
-          storeId: store.id,
-          quantity: qty,
-          reservedQuantity: Math.floor(qty * 0.1),
-          reorderLevel: 10,
-        },
-      });
-    }
-  }
-
-  // 9. Create 40+ Orders, OrderItems, Payments, and Reviews
-  console.log('🛒 Seeding 40+ Customer Orders, OrderItems & Payments...');
-  const statuses = [OrderStatus.DELIVERED, OrderStatus.SHIPPED, OrderStatus.PROCESSING, OrderStatus.PENDING];
-
-  for (let i = 1; i <= 40; i++) {
-    const customer = customerProfiles[i % customerProfiles.length];
-    const orderStatus = statuses[i % statuses.length];
-    const numItems = Math.floor(1 + (i % 4));
-    
-    let subtotal = 0;
-    const itemsData = [];
-
-    for (let j = 0; j < numItems; j++) {
-      const product = products[(i * 3 + j) % products.length];
-      const qty = Math.floor(1 + (j % 3));
-      const price = Number(product.price);
-      const itemTotal = price * qty;
-      subtotal += itemTotal;
-
-      itemsData.push({
-        productId: product.id,
-        unitPrice: price,
-        quantity: qty,
-        totalPrice: itemTotal,
-      });
-    }
-
-    const tax = subtotal * 0.08;
-    const shippingFee = subtotal > 200 ? 0 : 15;
-    const totalAmount = subtotal + tax + shippingFee;
-
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: `ORD-2026-${9000 + i}`,
-        customerId: customer.id,
-        storeId: storeOnline.id,
-        status: orderStatus,
-        subtotal,
-        tax,
-        shippingFee,
-        totalAmount,
-        shippingAddress: `${customer.address}, ${customer.city}, ${customer.state} ${customer.postalCode}`,
-        trackingNumber: `TRK-AZU-${9920000 + i}`,
-        items: {
-          create: itemsData,
-        },
-        payments: {
-          create: {
-            amount: totalAmount,
-            method: i % 2 === 0 ? 'CREDIT_CARD' : 'APPLE_PAY',
-            status: PaymentStatus.COMPLETED,
-            transactionId: `TXN-2026-${80000 + i}`,
-          },
-        },
-      },
-    });
-
-    // Create product review for completed order items
-    if (i <= 25) {
-      const firstItem = itemsData[0];
-      await prisma.review.create({
-        data: {
-          customerId: customer.id,
-          productId: firstItem.productId,
-          rating: 4 + (i % 2),
-          title: 'Great smart retail device!',
-          comment: `Very satisfied with order ${order.orderNumber}. Fast delivery and excellent build quality.`,
-        },
-      });
-    }
-  }
-
-  console.log('✅ Database Seeding Completed Successfully!');
-  console.log('------------------------------------------------');
+  console.log('\n====================================================');
+  console.log('        RETAIL DATA GENERATION SUMMARY REPORT       ');
+  console.log('====================================================');
+  console.log(` Preset Size:       ${config.size.toUpperCase()}`);
+  console.log(` Execution Time:    ${elapsedTime}s`);
+  console.log(` Random Seed:       ${config.randomSeed}`);
+  console.log(` Date Span:         ${report.metrics.earliestOrderDate} → ${report.metrics.latestOrderDate}`);
+  console.log('----------------------------------------------------');
+  console.log(` Users:             ${report.counts.users.toLocaleString()}`);
+  console.log(` Customers:         ${report.counts.customers.toLocaleString()}`);
+  console.log(` Categories:        ${report.counts.categories.toLocaleString()}`);
+  console.log(` Suppliers:         ${report.counts.suppliers.toLocaleString()}`);
+  console.log(` Stores:            ${report.counts.stores.toLocaleString()}`);
+  console.log(` Products:          ${report.counts.products.toLocaleString()} (Prices: ₹${report.metrics.minPrice.toLocaleString()} - ₹${report.metrics.maxPrice.toLocaleString()})`);
+  console.log(` Inventory Matrix:  ${report.counts.inventory.toLocaleString()}`);
+  console.log(` Orders:            ${report.counts.orders.toLocaleString()} (Totals: ₹${report.metrics.minOrderTotal.toLocaleString()} - ₹${report.metrics.maxOrderTotal.toLocaleString()})`);
+  console.log(` Order Items:       ${report.counts.orderItems.toLocaleString()}`);
+  console.log(` Payments:          ${report.counts.payments.toLocaleString()}`);
+  console.log(` Reviews:           ${report.counts.reviews.toLocaleString()}`);
+  console.log('----------------------------------------------------');
+  console.log(` Orphan Customers:  ${report.checks.orphanCustomers}`);
+  console.log(` Negative Stock:    ${report.checks.negativeInventory}`);
+  console.log('====================================================');
   console.log('🔑 Credentials Created:');
-  console.log('   Admin: admin@retail.bi / Password123!');
-  console.log('   Customer: customer1@example.com / Password123!');
-  console.log('------------------------------------------------');
+  console.log('   Admin:    admin@retail.bi / Password123!');
+  console.log('   Customer: customer1@retail.bi / Password123!');
+  console.log('====================================================\n');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error Seeding Database:', e);
+    console.error('❌ Error Generating Data:', e);
     process.exit(1);
   })
   .finally(async () => {

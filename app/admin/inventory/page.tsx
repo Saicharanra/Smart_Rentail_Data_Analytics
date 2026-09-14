@@ -161,6 +161,28 @@ export default function AdminInventoryPage() {
         </div>
       </div>
 
+      {/* Operational Stock Alert Banner */}
+      {inventory.some((i) => i.status === 'LOW STOCK' || i.status === 'CRITICAL OUT') && (
+        <div className="p-4 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between gap-3 shadow-lg backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold block text-white text-sm">Operational Low-Stock Alert</span>
+              <span>
+                {inventory.filter((i) => i.status === 'CRITICAL OUT').length} products are out of stock and{' '}
+                {inventory.filter((i) => i.status === 'LOW STOCK').length} products are below safety reorder threshold.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedStatus('LOW STOCK')}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors shrink-0"
+          >
+            View Low Stock
+          </button>
+        </div>
+      )}
+
       {toast && (
         <div
           className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 ${
