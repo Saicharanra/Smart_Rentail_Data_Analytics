@@ -11,6 +11,7 @@ export const createProductSchema = z.object({
   supplierId: z.string().uuid().optional(),
   imageUrl: z.string().url().optional(),
   isActive: z.boolean().optional().default(true),
+  stock: z.number().int().min(0).optional().default(50),
 });
 
 export const updateProductSchema = createProductSchema.partial();

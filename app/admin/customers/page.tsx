@@ -1,27 +1,44 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { MOCK_CUSTOMERS } from '@/lib/mock-data';
+import Link from 'next/link';
+import {
+  Users,
+  Search,
+  Filter,
+  Eye,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  ShoppingBag,
+  IndianRupee,
+  ChevronRight,
+  Loader2,
+  Sparkles
+} from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { Users, RefreshCw } from 'lucide-react';
 
-interface CustomerItem {
+interface CustomerRecord {
   id: string;
+  userId: string;
   name: string;
   email: string;
-  avatar?: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
   segment: string;
+  joinedDate: string;
   ordersCount: number;
   totalSpent: number;
-  location?: string;
-  city?: string;
-  state?: string;
 }
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<CustomerItem[]>([]);
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedSegment, setSelectedSegment] = useState('All');
 
   const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -33,28 +50,21 @@ export default function AdminCustomersPage() {
   };
 
   const fetchCustomers = async () => {
-    setLoading(true);
     try {
-      const res = await fetch('/api/customers', { headers: getAuthHeaders() });
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (selectedSegment !== 'All') params.set('segment', selectedSegment);
+
+      const res = await fetch(`/api/admin/customers?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await res.json();
-      if (res.ok && data.data && data.data.length > 0) {
-        const mapped: CustomerItem[] = data.data.map((c: any) => ({
-          id: c.id,
-          name: c.name || 'Customer',
-          email: c.email,
-          avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`,
-          segment: c.segment || 'VIP',
-          ordersCount: c.ordersCount !== undefined ? c.ordersCount : 4,
-          totalSpent: c.totalSpent !== undefined ? c.totalSpent : 1250,
-          location: c.city && c.state ? `${c.city}, ${c.state}` : 'Seattle, WA',
-        }));
-        setCustomers(mapped);
-      } else {
-        setCustomers(MOCK_CUSTOMERS);
+      if (res.ok && data.success && Array.isArray(data.data)) {
+        setCustomers(data.data);
       }
     } catch (err) {
       console.error('Failed to fetch customers:', err);
-      setCustomers(MOCK_CUSTOMERS);
     } finally {
       setLoading(false);
     }
@@ -62,74 +72,140 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [search, selectedSegment]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 font-sans">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 rounded-3xl p-8 backdrop-blur-md">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-purple-400 uppercase tracking-widest mb-1">
-            <Users className="w-4 h-4" /> Real-Time Customer Intelligence
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-purple-400 mb-1">
+            <Users className="w-4 h-4 text-purple-400" /> Customer Management Directory
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">Customer Directory</h1>
-          <p className="text-xs text-slate-400 mt-1">Track customer lifetime value (LTV), transaction frequency, and segments.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Registered Customers ({customers.length})
+          </h1>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">
+            Inspect customer profiles, lifetime spending, order activity, and regional segment classification.
+          </p>
         </div>
-        <button
-          onClick={fetchCustomers}
-          className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors w-fit"
-          title="Refresh Customer Directory"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-purple-400' : ''}`} />
-        </button>
       </div>
 
-      {/* Customers Table */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="text-slate-400 border-b border-slate-800 font-mono uppercase">
-              <tr>
-                <th className="pb-3 font-semibold">Customer</th>
-                <th className="pb-3 font-semibold">Segment</th>
-                <th className="pb-3 font-semibold">Orders Count</th>
-                <th className="pb-3 font-semibold">Total Spend (LTV)</th>
-                <th className="pb-3 font-semibold">Location</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {customers.map((cust) => (
-                <tr key={cust.id} className="hover:bg-slate-900/40 transition-colors">
-                  <td className="py-3 flex items-center gap-3">
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-800">
-                      <Image src={cust.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'} alt={cust.name} fill className="object-cover" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white">{cust.name}</h4>
-                      <span className="text-[10px] text-slate-500 font-mono">{cust.email}</span>
-                    </div>
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        cust.segment === 'VIP'
-                          ? 'bg-purple-950/60 text-purple-400 border border-purple-800/60'
-                          : cust.segment === 'Regular'
-                          ? 'bg-blue-950/60 text-blue-400 border border-blue-800/60'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      {cust.segment}
-                    </span>
-                  </td>
-                  <td className="py-3 font-mono text-slate-300">{cust.ordersCount} orders</td>
-                  <td className="py-3 font-mono font-bold text-emerald-400">{formatCurrency(cust.totalSpent)}</td>
-                  <td className="py-3 text-slate-400">{cust.location || 'USA'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Controls Bar: Search & Segment Filter */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+        <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 w-full md:w-80">
+          <Search className="w-4 h-4 text-slate-500 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by customer name, email, city..."
+            className="bg-transparent border-none outline-none w-full text-white placeholder-slate-500 text-xs"
+          />
         </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Filter className="w-4 h-4 text-purple-400" /> Filter Segment:
+          </div>
+          <select
+            value={selectedSegment}
+            onChange={(e) => setSelectedSegment(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
+          >
+            <option value="All">All Customer Segments</option>
+            <option value="VIP">VIP Segment</option>
+            <option value="Regular">Regular Segment</option>
+            <option value="New">New Segment</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Customer Directory Table */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 backdrop-blur-md space-y-4">
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 text-xs animate-pulse flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> Querying customer database records...
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 text-sm space-y-2">
+            <Users className="w-12 h-12 text-slate-600 mx-auto" />
+            <p className="font-semibold text-white">No customer profiles found</p>
+            <p className="text-xs text-slate-500">Try loosening your search terms or segment filter.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="text-slate-400 border-b border-slate-800 font-mono uppercase">
+                <tr>
+                  <th className="pb-3.5 font-semibold">Customer</th>
+                  <th className="pb-3.5 font-semibold">Contact Info</th>
+                  <th className="pb-3.5 font-semibold">Location</th>
+                  <th className="pb-3.5 font-semibold">Segment</th>
+                  <th className="pb-3.5 font-semibold text-center">Orders</th>
+                  <th className="pb-3.5 font-semibold text-right">Total Spent</th>
+                  <th className="pb-3.5 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {customers.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-900/40 transition-colors">
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-md font-mono shrink-0">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="font-bold text-white block text-sm">{c.name}</span>
+                          <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-purple-400" /> {c.email}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 font-mono text-slate-300">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-slate-500" /> {c.phone}
+                      </span>
+                    </td>
+                    <td className="py-4 text-slate-300">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-500" /> {c.city}, {c.state}
+                      </span>
+                    </td>
+                    <td className="py-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider ${
+                          c.segment === 'VIP'
+                            ? 'bg-purple-950/80 text-purple-300 border border-purple-800'
+                            : c.segment === 'New'
+                            ? 'bg-blue-950/80 text-blue-300 border border-blue-800'
+                            : 'bg-slate-800 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        {c.segment}
+                      </span>
+                    </td>
+                    <td className="py-4 text-center font-mono font-bold text-white text-sm">
+                      {c.ordersCount}
+                    </td>
+                    <td className="py-4 text-right font-mono font-bold text-emerald-400 text-sm">
+                      {formatCurrency(c.totalSpent)}
+                    </td>
+                    <td className="py-4 text-right">
+                      <Link
+                        href={`/admin/customers/${c.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-purple-600 text-white text-xs font-semibold transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-purple-300" /> View Profile
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
