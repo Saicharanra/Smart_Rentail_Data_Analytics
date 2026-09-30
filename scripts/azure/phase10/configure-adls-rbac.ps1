@@ -39,7 +39,7 @@ if ($adfIdentity) {
         --assignee $adfIdentity `
         --role "Storage Blob Data Contributor" `
         --scope $storageScope 2>$null
-    Write-Host "✓ Role assigned to Azure Data Factory Managed Identity." -ForegroundColor Green
+    Write-Host "[SUCCESS] Role assigned to Azure Data Factory Managed Identity." -ForegroundColor Green
 }
 
 # 2. Assign Storage Blob Data Contributor to Azure Synapse Managed Identity
@@ -54,7 +54,7 @@ if ($synIdentity) {
         --assignee $synIdentity `
         --role "Storage Blob Data Contributor" `
         --scope $storageScope 2>$null
-    Write-Host "✓ Role assigned to Azure Synapse Analytics Managed Identity." -ForegroundColor Green
+    Write-Host "[SUCCESS] Role assigned to Azure Synapse Analytics Managed Identity." -ForegroundColor Green
 }
 
-Write-Host "✓ Managed Identity RBAC setup completed." -ForegroundColor Green
+Write-Host "[SUCCESS] Managed Identity RBAC setup completed." -ForegroundColor Green

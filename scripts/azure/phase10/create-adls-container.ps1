@@ -23,12 +23,12 @@ $containerExists = az storage container exists `
     --auth-mode login 2>$null | ConvertFrom-Json
 
 if ($containerExists.exists -eq $true) {
-    Write-Host "✓ Container '$script:AZURE_STORAGE_CONTAINER' already exists. Reusing existing container." -ForegroundColor Yellow
+    Write-Host "[INFO] Container '$script:AZURE_STORAGE_CONTAINER' already exists. Reusing existing container." -ForegroundColor Yellow
 } else {
     Write-Host "Creating ADLS Gen2 Container '$script:AZURE_STORAGE_CONTAINER'..." -ForegroundColor Cyan
     az storage container create `
         --name $script:AZURE_STORAGE_CONTAINER `
         --account-name $script:AZURE_STORAGE_ACCOUNT `
         --auth-mode login 2>$null
-    Write-Host "✓ Container '$script:AZURE_STORAGE_CONTAINER' created successfully." -ForegroundColor Green
+    Write-Host "[SUCCESS] Container '$script:AZURE_STORAGE_CONTAINER' created successfully." -ForegroundColor Green
 }

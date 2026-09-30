@@ -58,13 +58,29 @@ $directories = @(
     "gold/business_metrics"
 )
 
-foreach ($dir in $directories) {
-    Write-Host "Verifying ADLS Directory: $script:AZURE_STORAGE_CONTAINER/$dir" -ForegroundColor Gray
-    az storage fs directory create `
-        --name $dir `
-        --file-system $script:AZURE_STORAGE_CONTAINER `
-        --account-name $script:AZURE_STORAGE_ACCOUNT `
-        --auth-mode login 2>$null
+# Ensure container exists first
+Write-Host "Ensuring container '$script:AZURE_STORAGE_CONTAINER' exists on Storage Account '$script:AZURE_STORAGE_ACCOUNT'..." -ForegroundColor Cyan
+if ($script:AZURE_STORAGE_KEY) {
+    az storage container create --name $script:AZURE_STORAGE_CONTAINER --account-name $script:AZURE_STORAGE_ACCOUNT --account-key $script:AZURE_STORAGE_KEY 2>$null
+} else {
+    az storage container create --name $script:AZURE_STORAGE_CONTAINER --account-name $script:AZURE_STORAGE_ACCOUNT --auth-mode login 2>$null
 }
 
-Write-Host "✓ ADLS Gen2 Medallion Directory Architecture (Bronze, Silver, Gold) initialized successfully." -ForegroundColor Green
+foreach ($dir in $directories) {
+    Write-Host "Creating ADLS Directory: $script:AZURE_STORAGE_CONTAINER/$dir" -ForegroundColor Gray
+    if ($script:AZURE_STORAGE_KEY) {
+        az storage fs directory create `
+            --name $dir `
+            --file-system $script:AZURE_STORAGE_CONTAINER `
+            --account-name $script:AZURE_STORAGE_ACCOUNT `
+            --account-key $script:AZURE_STORAGE_KEY 2>$null
+    } else {
+        az storage fs directory create `
+            --name $dir `
+            --file-system $script:AZURE_STORAGE_CONTAINER `
+            --account-name $script:AZURE_STORAGE_ACCOUNT `
+            --auth-mode login 2>$null
+    }
+}
+
+Write-Host "[SUCCESS] ADLS Gen2 Medallion Directory Architecture (Bronze, Silver, Gold) initialized successfully on '$script:AZURE_STORAGE_ACCOUNT'." -ForegroundColor Green
